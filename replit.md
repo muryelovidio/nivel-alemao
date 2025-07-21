@@ -27,10 +27,12 @@ Preferred communication style: Simple, everyday language.
 - **Development**: Hot reloading with Vite middleware integration
 
 ### Data Storage Solutions
-- **Database ORM**: Drizzle ORM configured for PostgreSQL
-- **Session Storage**: PostgreSQL sessions using connect-pg-simple
-- **Database Provider**: Neon Database (serverless PostgreSQL)
-- **Current Implementation**: In-memory storage for user data (development phase)
+- **Database ORM**: Drizzle ORM configured for PostgreSQL with Neon serverless
+- **Database Tables**: 
+  - `quiz_results`: Stores completed quiz sessions with scores, levels, and feedback
+  - `quiz_analytics`: Tracks individual question responses for performance analysis
+- **Session Tracking**: UUID-based session management for user journey tracking
+- **Database Provider**: Neon Database (serverless PostgreSQL) with automatic migrations
 
 ## Key Components
 
@@ -54,13 +56,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Flow
 
-1. **Quiz Initiation**: User starts the assessment through the main interface
+1. **Quiz Initiation**: User starts the assessment through the main interface with UUID session tracking
 2. **Question Delivery**: Server sends questions sequentially based on current index
-3. **Answer Processing**: Client validates answers and tracks score locally
+3. **Answer Processing**: Client validates answers, tracks score locally, and saves analytics to database
 4. **Progress Updates**: Real-time progress visualization with level indicators
-5. **AI Feedback Generation**: Upon completion, server generates detailed level-specific study plans
-6. **Results Display**: Comprehensive feedback with congratulations, level assessment, and personalized study roadmap
-7. **Call-to-Action**: Direct WhatsApp integration for course enrollment with special offers
+5. **Database Storage**: Each answer is stored in quiz_analytics table for performance tracking
+6. **AI Feedback Generation**: Upon completion, server generates detailed level-specific study plans
+7. **Results Storage**: Complete quiz results saved to quiz_results table with session data
+8. **Results Display**: Comprehensive feedback with congratulations, level assessment, and personalized study roadmap
+9. **Call-to-Action**: Direct WhatsApp integration for course enrollment with special offers
+10. **Admin Dashboard**: /admin route provides comprehensive analytics and user performance insights
 
 ## External Dependencies
 

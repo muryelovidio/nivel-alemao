@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import OpenAI from "openai";
 import { QuizRequestSchema, type QuizQuestion, type QuizResponse } from "@shared/schema";
+import { storage } from "./storage";
+import { v4 as uuidv4 } from "uuid";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
@@ -63,13 +65,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/quiz", async (req, res) => {
     try {
       const validatedData = QuizRequestSchema.parse(req.body);
-      const { phase, questionIndex, answer, score } = validatedData;
+      const { phase, questionIndex, answer, score, sessionId: providedSessionId } = validatedData;
+      
+      // Generate or use provided session ID
+      const sessionId = providedSessionId || uuidv4();
 
       if (phase === "quiz") {
         // Return question data
         const question = questions[questionIndex];
         if (!question) {
           return res.status(404).json({ error: "Question not found" });
+        }
+
+        // If answer provided, save analytics for the previous question
+        if (answer !== undefined && questionIndex > 0) {
+          const prevQuestion = questions[questionIndex - 1];
+          const isCorrect = answer === prevQuestion.answer;
+          
+          try {
+            await storage.saveQuizAnalytics({
+              questionId: prevQuestion.id,
+              selectedAnswer: answer,
+              correctAnswer: prevQuestion.answer,
+              isCorrect: isCorrect ? 1 : 0,
+              level: prevQuestion.level,
+              sessionId: sessionId,
+            });
+          } catch (error) {
+            console.error("Error saving analytics:", error);
+          }
         }
 
         const response: QuizResponse = {
@@ -81,8 +105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } 
       
       if (phase === "feedback") {
-        // Generate AI feedback using OpenAI
+        // Save final quiz result to database
         try {
+          const answers = await storage.getQuizAnalyticsBySession(sessionId);
+          const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+          
           // Determine level based on score
           let nivel = "A1";
           if (score >= 31) nivel = "B2";
@@ -136,7 +163,17 @@ Mantenha a estrutura, mas torne o texto mais natural e envolvente, mantendo toda
             temperature: 0.7
           });
 
-          const feedback = aiResponse.choices[0].message.content || "Feedback não disponível no momento.";
+          const feedback = aiResponse.choices[0].message.content || feedbackTemplate;
+
+          // Save quiz result to database
+          await storage.saveQuizResult({
+            sessionId: sessionId,
+            score: score,
+            level: nivel,
+            feedback: feedback,
+            answers: answers,
+            ipAddress: ipAddress,
+          });
 
           const response: QuizResponse = {
             feedback
@@ -185,6 +222,23 @@ https://wa.me/message/B7UCVV3XCPANK1
 —
 Estou te aguardando lá para te ajudar a alcançar fluência com metodologia acelerada e acompanhamento personalizado! 🎯🇩🇪`;
 
+          // Save quiz result to database (fallback case)
+          try {
+            const answers = await storage.getQuizAnalyticsBySession(sessionId);
+            const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+            
+            await storage.saveQuizResult({
+              sessionId: sessionId,
+              score: score,
+              level: nivel,
+              feedback: fallbackFeedback,
+              answers: answers,
+              ipAddress: ipAddress,
+            });
+          } catch (dbError) {
+            console.error("Error saving fallback result:", dbError);
+          }
+
           const response: QuizResponse = {
             feedback: fallbackFeedback
           };
@@ -197,6 +251,29 @@ Estou te aguardando lá para te ajudar a alcançar fluência com metodologia ace
     } catch (error) {
       console.error("Quiz API Error:", error);
       return res.status(400).json({ error: "Invalid request data" });
+    }
+  });
+
+  // Admin route to view quiz statistics
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const results = await storage.getQuizResultsBySession(""); // Get all results
+      const analytics = await storage.getQuizAnalyticsBySession(""); // Get all analytics
+      
+      res.json({
+        totalQuizzes: results.length,
+        results: results.slice(0, 50), // Limit to recent 50
+        analytics: analytics.slice(0, 100), // Limit to recent 100
+        levelDistribution: {
+          A1: results.filter(r => r.level === "A1").length,
+          A2: results.filter(r => r.level === "A2").length,
+          B1: results.filter(r => r.level === "B1").length,
+          B2: results.filter(r => r.level === "B2").length,
+        }
+      });
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ error: "Failed to fetch statistics" });
     }
   });
 

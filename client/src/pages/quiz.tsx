@@ -17,6 +17,7 @@ interface QuizState {
   showUserResponse: boolean;
   isLoading: boolean;
   feedback?: string;
+  sessionId: string;
 }
 
 const levelConfigs = {
@@ -40,7 +41,8 @@ export default function QuizPage() {
     started: false,
     completed: false,
     showUserResponse: false,
-    isLoading: false
+    isLoading: false,
+    sessionId: crypto.randomUUID()
   });
 
   const quizMutation = useMutation({
@@ -67,7 +69,8 @@ export default function QuizPage() {
       const response = await quizMutation.mutateAsync({
         phase: 'quiz',
         questionIndex: quizState.currentQuestionIndex,
-        score: quizState.score
+        score: quizState.score,
+        sessionId: quizState.sessionId
       });
 
       setQuizState(prev => ({
@@ -118,7 +121,8 @@ export default function QuizPage() {
       const response = await quizMutation.mutateAsync({
         phase: 'feedback',
         questionIndex: 39,
-        score: quizState.score
+        score: quizState.score,
+        sessionId: quizState.sessionId
       });
 
       setQuizState(prev => ({
@@ -145,7 +149,8 @@ export default function QuizPage() {
       started: false,
       completed: false,
       showUserResponse: false,
-      isLoading: false
+      isLoading: false,
+      sessionId: crypto.randomUUID()
     });
   };
 
