@@ -1,0 +1,51 @@
+Você vai gerar um projeto full‑stack em Node.js chamado “nivelamento‑alemao” com esta estrutura:
+
+1. **package.json** já configurado com dependências:
+   - express
+   - openai
+   - dotenv
+   - cookie‑parser
+
+2. **.env** (no .gitignore) contendo:
+   OPENAI_API_KEY=<sua_chave>
+
+3. **index.js** (na raiz):
+   - Carrega dotenv e configura Express para:
+     • Servir `public/` estático
+     • Parsear JSON e cookies
+   - Array `questions` com 15 objetos `{ question: "", options: ["A","B","C"], answer: "A" }`
+   - Rota **POST /api/quiz** que recebe JSON `{ phase, questionIndex, answer, score }`:
+     • Se `phase === "quiz"`, retorna `{ question, options }` para `questions[questionIndex]`
+     • Se `phase === "feedback"`, chama a OpenAI API (`gpt-4o-mini`) com este prompt (use template literals para injetar `score`):
+       ```
+       Você é tutor de alemão. O aluno respondeu 15 perguntas e acertou ${score}.
+       Calcule o nível CEFR (0–4=A1;5–8=A2;9–12=B1;13–15=B2).
+       Gere um parágrafo único com:
+       1. Nível estimado.
+       2. Dois pontos fortes.
+       3. Dois pontos a melhorar.
+       4. Convite para agendar aula: https://calendly.com/seulink
+       ```
+     • Retorna `{ feedback: "<texto da OpenAI>" }`.
+
+4. **public/index.html**:
+   - Um contêiner para chat/interação
+   - Botão “Iniciar Teste”
+   - Área para mostrar pergunta, opções e, ao fim, feedback + botão “Agendar Aula”.
+
+5. **public/style.css**:
+   - Estilo simples para chat e botões.
+
+6. **public/script.js**:
+   - Variáveis locais `questionIndex = 0`, `score = 0`
+   - Função `nextQuestion()` que faz `fetch('/api/quiz')` com `{ phase: "quiz", questionIndex }`, exibe pergunta e opções.
+   - Ao clicar numa opção, envia `{ phase: questionIndex < 14 ? "quiz" : "feedback", questionIndex, answer, score }`:
+     • Se “quiz” e a resposta estiver certa (compare com `questions[questionIndex].answer`), incrementa `score`.
+     • Se “feedback”, exibe `feedback` retornado pela API e o botão de agendamento.
+   - Atualiza `questionIndex` a cada resposta.
+
+7. **Rodando no Replit**:
+   - Em “Run”, configure o comando `node index.js`.
+   - Exponha a porta padrão do Replit (process.env.PORT).
+
+Gere todos esses arquivos de uma vez, organizando pastas, para que o projeto rode imediatamente ao clicar em “Run” no Replit.
