@@ -41,9 +41,10 @@ Preferred communication style: Simple, everyday language.
 - **Progress Tracking**: Visual progress indicators and level-based color coding
 
 ### AI Feedback Engine
-- **Model**: OpenAI GPT-4o-mini for generating personalized feedback
-- **Feedback Format**: CEFR level assessment, strengths identification, improvement areas, and call-to-action
-- **Integration**: Secure API key management through environment variables
+- **Model**: OpenAI GPT-4o for generating personalized feedback
+- **Feedback Format**: Detailed level-specific study plans with technical recommendations and WhatsApp CTA
+- **Content Structure**: Congratulations, CEFR level assessment, personalized study roadmap, and direct WhatsApp integration
+- **Integration**: Secure API key management through environment variables with comprehensive fallback system
 
 ### UI/UX Components
 - **Design System**: shadcn/ui components with German flag-inspired color palette
@@ -57,9 +58,9 @@ Preferred communication style: Simple, everyday language.
 2. **Question Delivery**: Server sends questions sequentially based on current index
 3. **Answer Processing**: Client validates answers and tracks score locally
 4. **Progress Updates**: Real-time progress visualization with level indicators
-5. **AI Feedback Generation**: Upon completion, server calls OpenAI API with user's score
-6. **Results Display**: Personalized feedback with CEFR level assessment and recommendations
-7. **Call-to-Action**: Integration with Calendly for lesson scheduling
+5. **AI Feedback Generation**: Upon completion, server generates detailed level-specific study plans
+6. **Results Display**: Comprehensive feedback with congratulations, level assessment, and personalized study roadmap
+7. **Call-to-Action**: Direct WhatsApp integration for course enrollment with special offers
 
 ## External Dependencies
 

@@ -83,15 +83,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (phase === "feedback") {
         // Generate AI feedback using OpenAI
         try {
-          const prompt = `Você é tutor de alemão. O aluno respondeu 40 perguntas e acertou ${score}.
-Calcule o nível CEFR (0–10=A1; 11–20=A2; 21–30=B1; 31–40=B2).
-Gere um parágrafo único com:
-1. Nível estimado.
-2. Dois pontos fortes.
-3. Dois pontos a melhorar.
-4. Convite para agendar aula: https://calendly.com/seulink
+          // Determine level based on score
+          let nivel = "A1";
+          if (score >= 31) nivel = "B2";
+          else if (score >= 21) nivel = "B1";
+          else if (score >= 11) nivel = "A2";
 
-Responda em português brasileiro de forma motivadora e personalizada.`;
+          // Generate detailed feedback based on level
+          let feedbackContent = "";
+          
+          if (nivel === "A1") {
+            feedbackContent = `1. Reforce o uso de artigos (der/die/das, ein), Negação (nicht, kein), Präsens de sein/haben, Ordem S‑V‑O, Ja‑Nein‑Fragen e W‑Fragen.
+2. Pratique vocabulário básico em contextos do dia a dia (saudações, apresentações).
+3. Ouvir diálogos simples (Podcast Destravando seu Alemão), shadowing de frases básicas, memorizar 20 palavras novas/semana.`;
+          } else if (nivel === "A2") {
+            feedbackContent = `1. Domine as diferenças entre Perfekt e Präteritum em narrativas cotidianas.
+2. Casos acusativo vs. dativo, Perfekt (haben/sein + Partizip II), Verbos modais, Conjunções (und, aber, weil, dass), Imperativo.
+3. Aprofunde o uso de conectores (zuerst, dann, danach), preposições de lugar e tempo em frases complexas.
+4. Assistir séries infantis em alemão, role‑plays (comprar, combinar horários), mapas mentais de verbos e 10 expressões/dia.`;
+          } else if (nivel === "B1") {
+            feedbackContent = `1. Trabalhe Konjunktiv II para hipóteses e pedidos polidos.
+2. Pratique orações subordinadas com „weil", „obwohl" e „als ob".
+3. Pronomes relativos, Präteritum de sein/haben/gehen, Declinação de adjetivos.
+4. Ouvir podcasts "Slow German", gravar áudios descrevendo o dia, anotar e usar 5 collocations/dia.`;
+          } else { // B2
+            feedbackContent = `1. Aplique Voz passiva e Modalpassiv, Partizipialkonstruktionen, Genitivo (wegen, trotz, während), Conjunções correlativas, Inversões estilísticas.
+2. Expanda seu repertório com textos literários ou técnicos, participar de debates ou mini‑apresentações de 5 min, aprender 10 sinônimos/semana.`;
+          }
+
+          const feedbackTemplate = `Você acertou ${score} de 40 e seu nível estimado é **${nivel}**. Parabéns pelo resultado!
+
+Para consolidar o que você já sabe e destravar de vez sua fala em alemão, aqui vão suas próximas etapas de estudo para o nível **${nivel}**:
+
+${feedbackContent}
+
+Quer ir além com material completo, cronograma claro e acompanhamento diário no seu aprendizado? Entre no meu WhatsApp e garante uma condição especial para o Curso Completo de Alemão da Ovídio Academy:
+https://wa.me/message/B7UCVV3XCPANK1
+
+—
+Estou te aguardando lá para te ajudar a alcançar fluência com metodologia acelerada e acompanhamento personalizado! 🎯🇩🇪`;
+
+          const prompt = `Baseado no seguinte template de feedback, gere uma versão personalizada e motivadora em português brasileiro:
+
+${feedbackTemplate}
+
+Mantenha a estrutura, mas torne o texto mais natural e envolvente, mantendo todas as informações técnicas e links.`;
 
           const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -110,13 +146,44 @@ Responda em português brasileiro de forma motivadora e personalizada.`;
         } catch (openaiError) {
           console.error("OpenAI Error:", openaiError);
           
-          // Fallback feedback if OpenAI fails
-          let level = "A1";
-          if (score >= 31) level = "B2";
-          else if (score >= 21) level = "B1";
-          else if (score >= 11) level = "A2";
+          // Fallback feedback if OpenAI fails - use same detailed format
+          let nivel = "A1";
+          if (score >= 31) nivel = "B2";
+          else if (score >= 21) nivel = "B1";
+          else if (score >= 11) nivel = "A2";
 
-          const fallbackFeedback = `Com base no seu resultado de ${score}/40 questões corretas, seu nível estimado é ${level}. Continue praticando para melhorar ainda mais! Agende uma aula personalizada: https://calendly.com/seulink`;
+          let feedbackContent = "";
+          
+          if (nivel === "A1") {
+            feedbackContent = `1. Reforce o uso de artigos (der/die/das, ein), Negação (nicht, kein), Präsens de sein/haben, Ordem S‑V‑O, Ja‑Nein‑Fragen e W‑Fragen.
+2. Pratique vocabulário básico em contextos do dia a dia (saudações, apresentações).
+3. Ouvir diálogos simples (Podcast Destravando seu Alemão), shadowing de frases básicas, memorizar 20 palavras novas/semana.`;
+          } else if (nivel === "A2") {
+            feedbackContent = `1. Domine as diferenças entre Perfekt e Präteritum em narrativas cotidianas.
+2. Casos acusativo vs. dativo, Perfekt (haben/sein + Partizip II), Verbos modais, Conjunções (und, aber, weil, dass), Imperativo.
+3. Aprofunde o uso de conectores (zuerst, dann, danach), preposições de lugar e tempo em frases complexas.
+4. Assistir séries infantis em alemão, role‑plays (comprar, combinar horários), mapas mentais de verbos e 10 expressões/dia.`;
+          } else if (nivel === "B1") {
+            feedbackContent = `1. Trabalhe Konjunktiv II para hipóteses e pedidos polidos.
+2. Pratique orações subordinadas com „weil", „obwohl" e „als ob".
+3. Pronomes relativos, Präteritum de sein/haben/gehen, Declinação de adjetivos.
+4. Ouvir podcasts "Slow German", gravar áudios descrevendo o dia, anotar e usar 5 collocations/dia.`;
+          } else { // B2
+            feedbackContent = `1. Aplique Voz passiva e Modalpassiv, Partizipialkonstruktionen, Genitivo (wegen, trotz, während), Conjunções correlativas, Inversões estilísticas.
+2. Expanda seu repertório com textos literários ou técnicos, participar de debates ou mini‑apresentações de 5 min, aprender 10 sinônimos/semana.`;
+          }
+
+          const fallbackFeedback = `Você acertou ${score} de 40 e seu nível estimado é **${nivel}**. Parabéns pelo resultado!
+
+Para consolidar o que você já sabe e destravar de vez sua fala em alemão, aqui vão suas próximas etapas de estudo para o nível **${nivel}**:
+
+${feedbackContent}
+
+Quer ir além com material completo, cronograma claro e acompanhamento diário no seu aprendizado? Entre no meu WhatsApp e garante uma condição especial para o Curso Completo de Alemão da Ovídio Academy:
+https://wa.me/message/B7UCVV3XCPANK1
+
+—
+Estou te aguardando lá para te ajudar a alcançar fluência com metodologia acelerada e acompanhamento personalizado! 🎯🇩🇪`;
 
           const response: QuizResponse = {
             feedback: fallbackFeedback

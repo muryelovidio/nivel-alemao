@@ -353,38 +353,40 @@ export default function QuizPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <i className="fas fa-sparkles text-yellow-500"></i>
-                    <span className="font-semibold text-gray-900">Feedback Personalizado da IA</span>
+                    <span className="font-semibold text-gray-900">Seu Plano de Estudos Personalizado</span>
                   </div>
-                  <div className="text-gray-800 leading-relaxed">
+                  <div className="text-gray-800 leading-relaxed whitespace-pre-line">
                     {quizState.feedback || 'Carregando feedback...'}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Call-to-Action */}
-            <Card>
+            {/* WhatsApp CTA */}
+            <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
               <CardContent className="p-6">
                 <div className="text-center space-y-4">
-                  <div className="text-2xl">📅</div>
-                  <h3 className="text-xl font-bold text-gray-900">Próximos Passos</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    Com base no seu resultado, recomendamos aulas personalizadas para acelerar seu progresso no alemão.
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+                    <i className="fab fa-whatsapp text-white text-2xl"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Continue Sua Jornada no Alemão!</h3>
+                  <p className="text-gray-700 max-w-md mx-auto">
+                    Entre em contato via WhatsApp para uma condição especial no Curso Completo de Alemão da Ovídio Academy.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
                     <Button 
-                      onClick={() => window.open('https://calendly.com/seulink', '_blank')}
-                      className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold py-3 px-6 rounded-full"
+                      onClick={() => window.open('https://wa.me/message/B7UCVV3XCPANK1', '_blank')}
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                     >
-                      <i className="fas fa-calendar-plus mr-2"></i>
-                      Agendar Aula Gratuita
+                      <i className="fab fa-whatsapp mr-3 text-xl"></i>
+                      Falar no WhatsApp Agora
                     </Button>
                     
                     <Button 
                       onClick={retakeTest}
                       variant="outline"
-                      className="py-3 px-6 rounded-full"
+                      className="py-4 px-6 rounded-full border-gray-300 hover:border-gray-400"
                     >
                       <i className="fas fa-redo mr-2"></i>
                       Refazer Teste
