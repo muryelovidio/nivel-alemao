@@ -11,7 +11,7 @@ const openai = new OpenAI({
 });
 
 // German language quiz questions - 40 authentic questions organized by CEFR levels
-const questions: QuizQuestion[] = [
+export const questions: QuizQuestion[] = [
   // A1 Level Questions (0-9)
   { id: 0, question: "Wie heißt du?", options: ["Ich heißen Maria", "Ich heiße Maria", "Ich heißt Maria"], answer: "B", level: "A1" },
   { id: 1, question: "Wo wohnst du?", options: ["Ich wohne in Berlin", "Ich wohne aus Berlin", "Ich wohnen in Berlin"], answer: "A", level: "A1" },

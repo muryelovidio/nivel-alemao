@@ -39,7 +39,16 @@ function getCurrentLevel(questionIndex: number): keyof typeof levelConfigs {
   return 'B2';
 }
 
+function getLevel(questionIndex: number): string {
+  if (questionIndex < 10) return 'A1';
+  if (questionIndex < 20) return 'A2';
+  if (questionIndex < 30) return 'B1';
+  return 'B2';
+}
+
 export default function QuizPage() {
+  const getSessionId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     score: 0,
@@ -47,8 +56,8 @@ export default function QuizPage() {
     completed: false,
     showUserResponse: false,
     isLoading: false,
-    sessionId: crypto.randomUUID(),
-    correctAnswer: undefined // Adicionado!
+    sessionId: getSessionId(), // Corrigido!
+    correctAnswer: undefined
   });
 
   const quizMutation = useMutation({
@@ -168,7 +177,7 @@ export default function QuizPage() {
       completed: false,
       showUserResponse: false,
       isLoading: false,
-      sessionId: crypto.randomUUID(),
+      sessionId: getSessionId(),
       correctAnswer: undefined // Corrigido: reinicia o campo!
     });
   };
@@ -545,5 +554,71 @@ export default function QuizPage() {
       </main>
     </div>
   );
+}
+
+// API Route: pages/api/quiz.ts
+import { NextApiRequest, NextApiResponse } from 'next';
+import { openai } from '@/lib/openai';
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
+function parseAIQuestion(content: string) {
+  // Exemplo de formato esperado:
+  // Pergunta: ...
+  // A) ...
+  // B) ...
+  // C) ...
+  // D) ...
+  // Resposta: ...
+  const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+  const question = lines[0].replace(/^Pergunta:\s*/i, '');
+  const options = lines.slice(1, 5).map(opt => opt.replace(/^[A-D]\)\s*/, ''));
+  const answerLine = lines.find(l => l.toLowerCase().startsWith('resposta:'));
+  const answer = answerLine ? answerLine.replace(/^Resposta:\s*/i, '') : '';
+  return { question, options, answer };
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { phase, questionIndex, score, sessionId } = req.body;
+
+  if (phase === "quiz") {
+    // Chamada ao OpenAI para gerar pergunta dinâmica
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "Você é um gerador de perguntas de alemão para nivelamento CEFR." },
+        { role: "user", content: `Gere uma pergunta de alemão nível ${getLevel(questionIndex)} com 4 opções e indique a resposta correta.` }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    });
+
+    // Parse da resposta do ChatGPT para extrair pergunta, opções e resposta correta
+    const { question, options, answer } = parseAIQuestion(aiRes.choices[0].message?.content || "");
+    if (!question || !options.length || !answer) {
+      return res.status(500).json({ error: "Erro ao gerar pergunta via IA" });
+    }
+    return res.status(200).json({ question, options, answer });
+  }
+
+  // Lógica para fase de feedback (feedback)
+  if (phase === "feedback") {
+    // Aqui você pode implementar a lógica para gerar o feedback baseado nas respostas do usuário
+    // Por enquanto, vamos apenas retornar uma mensagem genérica
+
+    const feedback = `Seu resultado: ${score} de 40. `;
+    const nivel = score < 10 ? 'A1' : score < 20 ? 'A2' : score < 30 ? 'B1' : 'B2';
+    const recomendacao = nivel === 'B2' ? 
+      'Parabéns! Você atingiu o nível B2. Continue praticando para manter e aprimorar suas habilidades.' :
+      'Continue praticando e revise os materiais do nível correspondente ao seu resultado.';
+
+    return res.status(200).json({ feedback: feedback + recomendacao });
+  }
+
+  return res.status(400).json({ error: 'Fase inválida' });
 }
 
