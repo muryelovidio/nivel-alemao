@@ -4,7 +4,11 @@ import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { QuizRequest, QuizResponse } from '@shared/schema';
+import type { QuizRequest, QuizResponse as BaseQuizResponse } from '@shared/schema';
+
+type QuizResponse = BaseQuizResponse & {
+  answer?: string; // Adiciona o campo que vem do backend!
+};
 
 interface QuizState {
   currentQuestionIndex: number;
@@ -18,6 +22,7 @@ interface QuizState {
   isLoading: boolean;
   feedback?: string;
   sessionId: string;
+  correctAnswer?: string; // Adicionado!
 }
 
 const levelConfigs = {
@@ -42,7 +47,8 @@ export default function QuizPage() {
     completed: false,
     showUserResponse: false,
     isLoading: false,
-    sessionId: crypto.randomUUID()
+    sessionId: crypto.randomUUID(),
+    correctAnswer: undefined // Adicionado!
   });
 
   const quizMutation = useMutation({
@@ -54,8 +60,14 @@ export default function QuizPage() {
 
   const startQuiz = () => {
     setQuizState(prev => ({ ...prev, started: true }));
-    loadNextQuestion();
   };
+
+  useEffect(() => {
+    if (quizState.started && quizState.currentQuestionIndex === 0 && !quizState.currentQuestion) {
+      loadNextQuestion();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState.started]);
 
   const loadNextQuestion = async () => {
     if (quizState.currentQuestionIndex >= 40) {
@@ -77,6 +89,7 @@ export default function QuizPage() {
         ...prev,
         currentQuestion: response.question,
         currentOptions: response.options,
+        correctAnswer: response.answer, // Adicionado!
         isLoading: false
       }));
     } catch (error) {
@@ -86,32 +99,37 @@ export default function QuizPage() {
   };
 
   const selectAnswer = async (selectedLetter: string, selectedText: string) => {
-    setQuizState(prev => ({
-      ...prev,
-      selectedAnswer: `${selectedLetter}) ${selectedText}`,
-      showUserResponse: true
-    }));
+    setQuizState(prev => {
+      const isCorrect = selectedText === prev.correctAnswer;
+      const nextIndex = prev.currentQuestionIndex + 1;
+      const isLastQuestion = nextIndex >= 40;
+      if (isLastQuestion) {
+        // Chama feedback após atualizar score
+        generateFeedback();
+      }
+      return {
+        ...prev,
+        selectedAnswer: `${selectedLetter}) ${selectedText}`,
+        showUserResponse: true,
+        score: isCorrect ? prev.score + 1 : prev.score,
+        currentQuestionIndex: nextIndex,
+        isLoading: isLastQuestion
+      };
+    });
 
-    // Simulate checking answer (in real app, this would come from backend)
-    // For demo purposes, assume answer A is always correct for scoring
-    const isCorrect = selectedLetter === 'A'; // This is just for demo
-    
-    if (isCorrect) {
-      setQuizState(prev => ({ ...prev, score: prev.score + 1 }));
-    }
-
-    // Show loading and proceed to next question
-    setTimeout(() => {
-      setQuizState(prev => ({ 
-        ...prev, 
-        isLoading: true,
-        currentQuestionIndex: prev.currentQuestionIndex + 1
-      }));
-      
+    if (quizState.currentQuestionIndex < 39) {
       setTimeout(() => {
-        loadNextQuestion();
-      }, 1500);
-    }, 1000);
+        setQuizState(prev => ({
+          ...prev,
+          isLoading: true,
+          currentQuestionIndex: prev.currentQuestionIndex + 1
+        }));
+
+        setTimeout(() => {
+          loadNextQuestion();
+        }, 1500);
+      }, 1000);
+    }
   };
 
   const generateFeedback = async () => {
@@ -150,7 +168,8 @@ export default function QuizPage() {
       completed: false,
       showUserResponse: false,
       isLoading: false,
-      sessionId: crypto.randomUUID()
+      sessionId: crypto.randomUUID(),
+      correctAnswer: undefined // Corrigido: reinicia o campo!
     });
   };
 
@@ -527,3 +546,4 @@ export default function QuizPage() {
     </div>
   );
 }
+
